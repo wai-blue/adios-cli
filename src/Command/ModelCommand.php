@@ -2,6 +2,7 @@
 // src/Command/CreateUserCommand.php
 namespace App\Command;
 
+use App\DependencyInjection\Helper;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -45,7 +46,7 @@ class ModelCommand extends Command
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
       $filename = $input->getArgument('filename');
-      $projectRoot = $this->findProjectRoot();
+      $projectRoot = Helper::findProjectRoot(getcwd());
         // ... put here the code to create the user
 
         // this method must return an integer number with the "exit status code"
@@ -83,15 +84,5 @@ class ModelCommand extends Command
     }
 
     // ACHTUNG! Toto pravdepodobne chceme zakazat a iba pozriet ci sa v aktualnom folderi nachadza composer.json.
-  private function findProjectRoot(): ?string
-  {
-    $dir = getcwd();
-    while ($dir !== '/') {
-      if (file_exists($dir . '/composer.json')) {
-        return $dir;
-      }
-      $dir = dirname($dir);
-    }
-    return null;
-  }
+
 }
