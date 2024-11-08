@@ -1,0 +1,5 @@
+alias adios=/var/www/adios-cli/bin/adios
+
+adios
+adios new adios-app
+adios model:create Produkt
