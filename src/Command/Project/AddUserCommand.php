@@ -2,6 +2,7 @@
 // src/Command/CreateUserCommand.php
 namespace App\Command\Project;
 
+use App\DependencyInjection\Helper;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -12,12 +13,11 @@ use Symfony\Component\Filesystem\Filesystem;
 
 // the name of the command is what users type after "php bin/console"
 #[AsCommand(
-    name: 'project:create',
-    description: 'Creates a new ADIOS project',
-    aliases: ['new'],
+    name: 'project:add-user',
+    description: 'Creates a new user in your ADIOS project',
     hidden: false,
 )]
-class CreateCommand extends Command
+class AddUserCommand extends Command
 {
     public function __construct(bool $requirePassword = false)
     {
@@ -41,11 +41,18 @@ class CreateCommand extends Command
       ╚╝─╚╝╚═══╝╚══╝╚═══╝╚═══╝
       ' . PHP_EOL . PHP_EOL);
 
-      $helper = $this->getHelper('question');
+    }
 
-      // Prompt for user's name
-      $nameQuestion = new Question('Please enter the username for your first account: ', 'administrator');
-      $name = $helper->ask($input, $output, $nameQuestion);
+    protected function execute(InputInterface $input, OutputInterface $output): int
+    {
+      $name = $input->getArgument('username');
+      $projectRoot = Helper::findProjectRoot(getcwd());
+        // ... put here the code to create the user
+
+        // this method must return an integer number with the "exit status code"
+        // of the command. You can also use these constants to make code more readable
+
+      $helper = $this->getHelper('question');
 
       // Prompt for password (hidden input)
       $passwordQuestion = new Question('Please enter password for this account: ', 'abcd');
@@ -53,26 +60,13 @@ class CreateCommand extends Command
       $passwordQuestion->setHiddenFallback(false);
       $password = $helper->ask($input, $output, $passwordQuestion);
 
-    }
-
-    protected function execute(InputInterface $input, OutputInterface $output): int
-    {
-      $filename = $input->getArgument('path');
-//      $projectRoot = $this->findProjectRoot();
-        // ... put here the code to create the user
-
-        // this method must return an integer number with the "exit status code"
-        // of the command. You can also use these constants to make code more readable
-
-      $filesystem = new Filesystem();
-
-      if (!$filesystem->exists($filename)) {
-        $filesystem->mkdir($filename);
-        $output->writeln("<info>File '$filename' created successfully.</info>");
-      } else {
-        $output->writeln("<error>Folder '$filename' already exists.</error>");
-        return Command::FAILURE;
-      }
+//      if (!$filesystem->exists($filename)) {
+//        $filesystem->mkdir($filename);
+//        $output->writeln("<info>File '$filename' created successfully.</info>");
+//      } else {
+//        $output->writeln("<error>Folder '$filename' already exists.</error>");
+//        return Command::FAILURE;
+//      }
 
         // return this if there was no problem running the command
         // (it's equivalent to returning int(0))
