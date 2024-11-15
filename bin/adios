@@ -12,6 +12,7 @@ if (file_exists(__DIR__.'/../../../autoload.php')) {
 $app = new Symfony\Component\Console\Application('ADIOS Installer', '0.1.0');
 $app->add(new App\Command\Project\CreateCommand);
 $app->add(new App\Command\Project\InstallCommand());
+$app->add(new App\Command\Project\AddUserCommand());
 $app->add(new App\Command\ModelCommand);
 
 $app->run();

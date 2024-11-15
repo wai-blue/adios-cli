@@ -2,6 +2,7 @@
 // src/Command/CreateUserCommand.php
 namespace App\Command\Project;
 
+use AdiosApp;
 use App\DependencyInjection\Helper;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
@@ -46,7 +47,7 @@ class AddUserCommand extends Command
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
       $name = $input->getArgument('username');
-      $projectRoot = Helper::findProjectRoot(getcwd());
+      $projectRoot = $input->getArgument('path') ?? Helper::findProjectRoot(getcwd());
         // ... put here the code to create the user
 
         // this method must return an integer number with the "exit status code"
@@ -59,6 +60,31 @@ class AddUserCommand extends Command
       $passwordQuestion->setHidden(true);
       $passwordQuestion->setHiddenFallback(false);
       $password = $helper->ask($input, $output, $passwordQuestion);
+
+      global $config;
+      require_once($projectRoot . "/ConfigEnv.php");
+      require_once($projectRoot . "/src/ConfigApp.php");
+
+      require_once($projectRoot . "/src/App.php");
+
+      try {
+        $app = new AdiosApp($config, TRUE);
+
+        $mUser = new \ADIOS\Models\User($app);
+        $idUserAdministrator = $mUser->eloquent->create([
+          'login' => $name,
+          'password' => $mUser->hashPassword($password),
+          'is_active' => 1,
+        ])->id;
+
+//  $mUserRole = new \CeremonyCrmApp\Modules\Core\Settings\Models\UserRole($app);
+//  $idRoleAdministrator = $mUserRole->eloquent->create(['name' => 'Administrator'])->id;
+
+//  $mUserHasRole = new \CeremonyCrmApp\Modules\Core\Settings\Models\UserHasRole($app);
+//  $mUserHasRole->eloquent->create(['id_user' => $idUserAdministrator, 'id_role' => $idRoleAdministrator])->id;
+      } catch (\Exception $e) {
+        echo $e->getMessage();
+      }
 
 //      if (!$filesystem->exists($filename)) {
 //        $filesystem->mkdir($filename);
@@ -84,7 +110,8 @@ class AddUserCommand extends Command
     protected function configure(): void
     {
         $this->setDescription('Creates new ADIOS project.')
-          ->addArgument('path', InputArgument::REQUIRED, 'Path to the directory in which the project should be installed')
+          ->addArgument('username', InputArgument::REQUIRED, 'Username of the account you wish to add ')
+          ->addArgument('path', InputArgument::OPTIONAL, 'Path to the directory in which the project is')
           ->setHelp('This command allows you to create a new ADIOS project.')
         ;
     }

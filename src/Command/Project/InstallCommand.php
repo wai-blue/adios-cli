@@ -2,6 +2,7 @@
 // src/Command/CreateUserCommand.php
 namespace App\Command\Project;
 
+use AdiosApp;
 use App\DependencyInjection\Helper;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
@@ -43,15 +44,20 @@ class InstallCommand extends Command
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-      $projectRoot = Helper::findProjectRoot(getcwd());
+      global $config;
+      $projectRoot = $input->getArgument('path') ?? Helper::findProjectRoot(getcwd());
       // ... put here the code to create the user
 
       // this method must return an integer number with the "exit status code"
       // of the command. You can also use these constants to make code more readable
 
-      exec('php ' . $projectRoot . DIRECTORY_SEPARATOR . 'install.php', $cmdoutput, $retval);
+      require_once($projectRoot . "/ConfigEnv.php");
+      require_once($projectRoot . "/src/ConfigApp.php");
 
-      $output->writeln(implode($cmdoutput));
+      require($projectRoot . "/src/App.php");
+
+      $app = new AdiosApp($config, TRUE);
+      $app->install();
 
       // return this if there was no problem running the command
       // (it's equivalent to returning int(0))
@@ -69,6 +75,7 @@ class InstallCommand extends Command
     protected function configure(): void
     {
         $this->setDescription('Installs an ADIOS project.')
+          ->addArgument('path', InputArgument::OPTIONAL, 'Path to the directory in which the project is')
           ->setHelp('This command allows you to install an ADIOS project.')
         ;
     }
