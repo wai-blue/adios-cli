@@ -10,6 +10,7 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Question\Question;
+use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\Filesystem\Filesystem;
 
 // the name of the command is what users type after "php bin/console"
@@ -46,42 +47,65 @@ class AddUserCommand extends Command
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-      $name = $input->getArgument('username');
-      $projectRoot = $input->getArgument('path') ?? Helper::findProjectRoot(getcwd());
-        // ... put here the code to create the user
-
-        // this method must return an integer number with the "exit status code"
-        // of the command. You can also use these constants to make code more readable
-
-      $helper = $this->getHelper('question');
-
-      // Prompt for password (hidden input)
-      $passwordQuestion = new Question('Please enter password for this account: ', 'abcd');
-      $passwordQuestion->setHidden(true);
-      $passwordQuestion->setHiddenFallback(false);
-      $password = $helper->ask($input, $output, $passwordQuestion);
-
-      global $config;
-      require_once($projectRoot . "/ConfigEnv.php");
-      require_once($projectRoot . "/src/ConfigApp.php");
-
-      require_once($projectRoot . "/src/App.php");
-
       try {
+        $name = $input->getArgument('username');
+        $projectRoot = $input->getArgument('path') ?? Helper::findProjectRoot(getcwd());
+
+        global $config;
+        require_once($projectRoot . "/ConfigEnv.php");
+        require_once($projectRoot . "/src/ConfigApp.php");
+
+        require_once($projectRoot . "/src/App.php");
         $app = new AdiosApp($config, TRUE);
 
         $mUser = new \ADIOS\Models\User($app);
+
+        if ($mUser->eloquent->where('login', $name)->count() != 0) {
+          $output->writeln('<error>The name you have entered already exists.</error>');
+          return Command::FAILURE;
+        }
+
+        $helper = $this->getHelper('question');
+
+        // Prompt for password (hidden input)
+        $passwordQuestion = new Question('Please enter password for this account: ', 'abcd');
+        $passwordQuestion->setHidden(true);
+        $passwordQuestion->setHiddenFallback(false);
+        $password = $helper->ask($input, $output, $passwordQuestion);
+
+        $mUserRole = new \ADIOS\Models\UserRole($app);
+
+        $choices = [];
+        foreach ($mUserRole->eloquent->all() as $role) {
+          $choices[$role->id] = $role->name;
+        }
+        $choices[0] = 'Other';
+
+        $io = new SymfonyStyle($input, $output);
+
+        $value = $io->choice('Choose the users roles', $choices);
+
+        if ($value == 'Other') {
+          $roleQuestion = new Question('Enter the name of the role: ');
+          $roleValue = $helper->ask($input, $output, $roleQuestion);
+          if ($mUserRole->eloquent->where('name', $roleValue)->count() != 0) {
+            $output->writeln('<error>The role you have entered already exists.</error>');
+            return Command::FAILURE;
+          }
+          $idRole = $mUserRole->eloquent->create(['name' => $roleValue])->id;
+        } else {
+          $idRole = $mUserRole->eloquent->where(['name' => $value])->first()->id;
+        }
+
         $idUserAdministrator = $mUser->eloquent->create([
           'login' => $name,
           'password' => $mUser->hashPassword($password),
           'is_active' => 1,
         ])->id;
 
-        $mUserRole = new \ADIOS\Models\UserRole($app);
-        $idRoleAdministrator = $mUserRole->eloquent->create(['name' => 'Administrator'])->id;
 
         $mUserHasRole = new \ADIOS\Models\UserHasRole($app);
-        $mUserHasRole->eloquent->create(['id_user' => $idUserAdministrator, 'id_role' => $idRoleAdministrator])->id;
+        $mUserHasRole->eloquent->create(['id_user' => $idUserAdministrator, 'id_role' => $idRole])->id;
       } catch (\Exception $e) {
         echo $e->getMessage();
       }

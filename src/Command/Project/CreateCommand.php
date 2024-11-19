@@ -72,6 +72,8 @@ class CreateCommand extends Command
         $dbUser = $helper->ask($input, $output, $dbUserQuestion);
 
         $dbPasswordQuestion = new Question('Enter DB password:' . PHP_EOL);
+        $dbPasswordQuestion->setHidden(true);
+        $dbPasswordQuestion->setHiddenFallback(false);
         $dbPassword = $helper->ask($input, $output, $dbPasswordQuestion);
 
         $dbNameQuestion = new Question('Enter DB name: [adios-app]' . PHP_EOL, 'adios-app');
